@@ -1,12 +1,10 @@
 import os
 import cv2
 import torch
-import numpy as np
-import torchvision
-import torchvision.transforms.functional
 import torchvision.transforms.v2 as transforms
 
 from torch.utils.data import Dataset
+
 
 def pad_to_square(image):
     """
@@ -17,7 +15,7 @@ def pad_to_square(image):
 
     if h == w:
         return image
-    
+
     if h > w:
         pad = (h - w) // 2
         pad_left = pad
@@ -37,9 +35,9 @@ def pad_to_square(image):
 
 
 class FigaroDataset(Dataset):
-    def __init__(self, folder, split):
+    def __init__(self, dataset_folder, split):
         """
-        folder: str, path to the dataset folder
+        dataset_folder: str, path to the dataset folder
                 - folder
                     - GT
                         - Training
@@ -57,7 +55,6 @@ class FigaroDataset(Dataset):
         split: str, "train" or "test"
         """
         super().__init__()
-        self.folder = folder
 
         if split == "train":
             split = "Training"
@@ -65,10 +62,9 @@ class FigaroDataset(Dataset):
             split = "Testing"
         else:
             raise ValueError(f"Invalid split: {split}")
-        
 
-        self.original_folder = os.path.join(folder, "Original", split)
-        self.groundtruth_folder = os.path.join(folder, "GT", split)
+        self.original_folder = os.path.join(dataset_folder, "Original", split)
+        self.groundtruth_folder = os.path.join(dataset_folder, "GT", split)
 
         self.names = [name.split("-")[0] for name in os.listdir(self.original_folder)]
 
@@ -84,7 +80,6 @@ class FigaroDataset(Dataset):
             )
         else:
             self.transform = transforms.Resize((256, 256))
-
 
     def __len__(self):
         return len(self.names)
@@ -109,12 +104,14 @@ class FigaroDataset(Dataset):
         pair = self.transform(pair)
 
         image = pair[:3, ...]
-        mask = pair[3, ...][None, ...]
+        mask = pair[3, ...][None, ...].clamp(0, 1)
 
         ###
-        image_to_write = cv2.cvtColor(image.permute(1, 2, 0).numpy(), cv2.COLOR_RGB2BGR) * 255
-        cv2.imwrite(os.path.join("outputs", f"image_{index}.jpg"), image_to_write)
-        cv2.imwrite(os.path.join("outputs", f"mask_{index}.jpg"), mask[0].numpy() * 255)
+        # image_to_write = (
+        #     cv2.cvtColor(image.permute(1, 2, 0).numpy(), cv2.COLOR_RGB2BGR) * 255
+        # )
+        # cv2.imwrite(os.path.join("outputs", f"image_{index}.jpg"), image_to_write)
+        # cv2.imwrite(os.path.join("outputs", f"mask_{index}.jpg"), mask[0].numpy() * 255)
         ###
         return image, mask
 
