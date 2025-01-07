@@ -10,7 +10,6 @@ class LossFunction(nn.Module):
         super().__init__()
 
         self.dice_loss = DiceLoss()
-        self.kd_loss = KDLoss()
         self.bce_loss = nn.BCELoss()
 
     def forward(self, prediction, label):
@@ -19,6 +18,25 @@ class LossFunction(nn.Module):
         loss += 0.5 * self.bce_loss(prediction, label)
         return loss
 
+
+def ddp_training_step(config, model, helper, epoch, rank, verbose=True):
+    batch_time = AverageMeter("batch-time")
+    data_time = AverageMeter("data-time")
+    losses = AverageMeter("losses")
+    dices = AverageMeter("dices")
+    ious = AverageMeter("ious")
+
+    train_loader = helper.get_train_loader(config)
+    loss_function = helper.get_loss_function()
+    optimizer = helper.get_optimizer()
+    scheduler = helper.get_scheduler()
+
+    model.train()
+
+
+
+
+#####################################################################
 
 def evaluate_model(config, model, accelerator, helper, verbose=True):
     test_loader = helper.get_test_loader(config)
